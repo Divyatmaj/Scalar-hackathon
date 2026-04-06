@@ -1,0 +1,40 @@
+.answer-box {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.answer-box h3 {
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+}
+
+.answer-textarea {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 15px;
+  transition: border-color 0.3s ease;
+}
+
+.answer-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.answer-textarea:disabled {
+  background: #f0f0f0;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .answer-box h3 {
+    font-size: 1.1rem;
+  }
+}
