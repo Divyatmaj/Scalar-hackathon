@@ -3,6 +3,7 @@ FastAPI Backend for AI Interview Preparation RL Environment
 OpenEnv-compliant API implementation
 """
 
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -12,6 +13,8 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+print("🚀 Server starting...")
 
 # Import from app package
 from app.environment import InterviewEnv
@@ -33,9 +36,23 @@ app.add_middleware(
 
 # Initialize components
 evaluator = Evaluator()
-questions_path = Path(__file__).parent / "app" / "dataset.json"
+
+# Resolve dataset path — works in both local (backend/) and Docker (/app/) contexts
+questions_path = Path(__file__).resolve().parent / "app" / "dataset.json"
+print(f"📂 Dataset path: {questions_path}")
+print(f"📂 Dataset exists: {questions_path.exists()}")
+
 env = InterviewEnv(questions_path=str(questions_path), evaluator=evaluator)
-agent = InterviewAgent(mode="api")  # Will use HF_TOKEN from .env
+
+# Graceful agent init — don't crash server if API key is missing
+try:
+    agent = InterviewAgent(mode="api")  # Will use HF_TOKEN from .env
+    print(f"🤖 Agent initialized in mode: {agent.mode}")
+except Exception as e:
+    print(f"⚠️  Agent init failed ({e}), using mock mode")
+    agent = InterviewAgent(mode="mock")
+
+print("✅ All components initialized successfully")
 
 # Global state
 current_state = None
@@ -310,4 +327,6 @@ def get_stats():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", "8000"))
+    print(f"🌐 Starting server on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)

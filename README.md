@@ -7,7 +7,7 @@ Production-ready RL system for technical interview practice with intelligent fee
 ### Option 1: Docker (Recommended)
 ```bash
 docker build -t ai-interview-env .
-docker run -p 8000:8000 -e HF_TOKEN=your_token ai-interview-env
+docker run -p 7860:7860 -e HF_TOKEN=your_token ai-interview-env
 ```
 
 ### Option 2: Local Development
