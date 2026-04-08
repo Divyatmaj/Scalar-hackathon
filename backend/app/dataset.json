@@ -1,11 +1,11 @@
 [
   {
     "question": "What is a binary search and what is its time complexity?",
-    "keywords": ["sorted array", "divide", "logarithmic", "O(log n)", "middle", "halving"],
+    "keywords": ["sorted array", "divide", "logarithmic", "O(log n)", "middle element", "halving"],
     "difficulty": "easy"
   },
   {
-    "question": "Explain the difference between process and thread.",
+    "question": "Explain the difference between a process and a thread.",
     "keywords": ["process", "thread", "memory space", "lightweight", "shared memory", "independent"],
     "difficulty": "medium"
   },
@@ -20,7 +20,7 @@
     "difficulty": "easy"
   },
   {
-    "question": "What is a deadlock in operating systems? How can it be prevented?",
+    "question": "What is a deadlock in operating systems and how can it be prevented?",
     "keywords": ["mutual exclusion", "hold and wait", "circular wait", "prevention", "avoidance", "resources"],
     "difficulty": "hard"
   },
@@ -45,7 +45,7 @@
     "difficulty": "medium"
   },
   {
-    "question": "Explain what RESTful API is and its key constraints.",
+    "question": "Explain what a RESTful API is and its key constraints.",
     "keywords": ["stateless", "client-server", "cacheable", "uniform interface", "HTTP methods", "resources"],
     "difficulty": "medium"
   },

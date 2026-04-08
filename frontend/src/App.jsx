@@ -3,6 +3,7 @@ import axios from 'axios';
 import QuestionCard from './components/QuestionCard';
 import AnswerBox from './components/AnswerBox';
 import ScoreDisplay from './components/ScoreDisplay';
+import SettingsModal from './components/SettingsModal';
 import './App.css';
 
 const API_URL = 'http://localhost:8000';
@@ -15,6 +16,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [episodeData, setEpisodeData] = useState(null);
   const [rewardHistory, setRewardHistory] = useState([]);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Get new question
   const getQuestion = async () => {
@@ -108,6 +110,13 @@ function App() {
     <div className="App">
       <header className="header">
         <h1>🤖 AI Interview Preparation</h1>
+        <button 
+          className="settings-btn"
+          onClick={() => setIsSettingsOpen(true)}
+          title="Configure Model"
+        >
+          ⚙️
+        </button>
         <p className="subtitle">Reinforcement Learning Environment</p>
         <div className="rl-flow">
           <span className="flow-item">STATE (Question)</span>
@@ -119,6 +128,15 @@ function App() {
           <span className="flow-item">NEXT STATE</span>
         </div>
       </header>
+
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onSave={() => {
+          // Optional: Refresh or show success message
+          alert('✅ Model configuration updated!');
+        }}
+      />
 
       <div className="container">
         <div className="controls">
