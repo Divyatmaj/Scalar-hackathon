@@ -35,13 +35,13 @@ class Evaluator:
     - Explainable results (specific missing concepts)
     """
     
-    def __init__(self, keyword_weight: float = 0.7, ai_weight: float = 0.3):
+    def __init__(self, keyword_weight: float = 0.8, ai_weight: float = 0.2):
         """
         Initialize evaluator with scoring weights
         
         Args:
-            keyword_weight: Weight for keyword-based score (default 0.7)
-            ai_weight: Weight for AI-based score (default 0.3)
+            keyword_weight: Weight for keyword-based score (default 0.8)
+            ai_weight: Weight for length-based score (default 0.2)
             
         Weights should sum to 1.0 for normalized scoring
         """
@@ -132,50 +132,45 @@ class Evaluator:
     
     def evaluate_ai(self, answer: str, question: str = None) -> float:
         """
-        AI-based evaluation (placeholder for future LLM judge)
+        Length-based evaluation (deterministic)
         
-        This is a MOCK implementation. In production, this would:
-        - Call GPT-4/Claude to judge answer quality
-        - Return semantic understanding score
-        - Consider coherence, completeness, clarity
+        DETERMINISTIC implementation for OpenEnv compliance.
+        Scores based on answer length relative to ideal length.
         
         Current implementation:
-        - Returns random score between 0.5-0.9
-        - Can be replaced with real LLM API call
+        - Deterministic scoring based on answer length
+        - No randomness - same input always gives same output
+        - Considers completeness via length heuristic
         
         Args:
             answer: Candidate's answer
             question: Original question (for context)
             
         Returns:
-            AI score between 0.0 and 1.0
+            Length score between 0.0 and 1.0
         """
-        # PLACEHOLDER IMPLEMENTATION
-        # TODO: Replace with actual LLM-based judging
+        # DETERMINISTIC IMPLEMENTATION for OpenEnv compliance
         
-        # Mock: Simple heuristic based on answer length
-        # Longer, structured answers get slightly higher scores
-        import random
+        # Ideal answer length: 100-300 characters
+        # Score based on how close to ideal range
+        if not answer or len(answer.strip()) < 10:
+            return 0.2
         
-        if not answer or len(answer.strip()) < 20:
-            return 0.3
-        elif len(answer.strip()) < 100:
-            return 0.6 + random.uniform(0, 0.2)
+        answer_length = len(answer.strip())
+        
+        # Optimal range: 100-300 characters
+        if 100 <= answer_length <= 300:
+            return 1.0
+        elif answer_length < 100:
+            # Scale from 0.5 to 1.0 as length approaches 100
+            return 0.5 + 0.5 * (answer_length / 100.0)
         else:
-            return 0.7 + random.uniform(0, 0.2)
+            # Penalize excessively long answers (diminishing returns)
+            excess = answer_length - 300
+            penalty = min(excess / 500.0, 0.3)  # Max 0.3 penalty
+            return max(0.7, 1.0 - penalty)
         
-        # FUTURE IMPLEMENTATION:
-        # response = openai.ChatCompletion.create(
-        #     model="gpt-4",
-        #     messages=[{
-        #         "role": "system",
-        #         "content": "You are an expert technical interviewer. Rate answers 0-10."
-        #     }, {
-        #         "role": "user",
-        #         "content": f"Question: {question}\nAnswer: {answer}\nScore:"
-        #     }]
-        # )
-        # return float(response.choices[0].message.content) / 10.0
+
     
     def evaluate(self, answer: str, keywords: List[str], question: str = None) -> Dict[str, Any]:
         """
@@ -283,35 +278,23 @@ class Evaluator:
             base += "\n   💡 Tip: Cover fundamental concepts first"
             return base
     
-    def compute_reward(self, score: float) -> int:
+    def compute_reward(self, score: float) -> float:
         """
         Convert score to RL reward signal
         
-        Reward structure (reinforcement learning):
-        - Excellent (≥0.8): +10 → Strong positive reinforcement
-        - Good (≥0.5): +5 → Moderate positive reinforcement
-        - Needs improvement (≥0.3): 0 → Neutral (no penalty, no reward)
-        - Poor (<0.3): -5 → Negative reinforcement
-        
-        This encourages:
-        - High-quality comprehensive answers (+10)
-        - Discourages incomplete answers (-5)
-        - Neutral zone for partial attempts (0)
+        OpenEnv-compliant reward function:
+        - Reward is IDENTICAL to score (0.0 to 1.0 range)
+        - Deterministic: same score always gives same reward
+        - Continuous: allows fine-grained learning signals
         
         Args:
             score: Evaluation score (0.0 to 1.0)
             
         Returns:
-            Integer reward value
+            Float reward value (0.0 to 1.0)
         """
-        if score >= 0.8:
-            return 10
-        elif score >= 0.5:
-            return 5
-        elif score >= 0.3:
-            return 0
-        else:
-            return -5
+        # OpenEnv compliance: reward = score (0.0 to 1.0)
+        return float(score)
     
     def set_weights(self, keyword_weight: float, ai_weight: float):
         """

@@ -179,7 +179,7 @@ class InterviewEnv:
         
         # Determine if episode is done
         # Done if: high score OR max retries reached
-        done = (reward >= 10) or (self.retry_count >= self.max_retries)
+        done = (reward >= 0.9) or (self.retry_count >= self.max_retries)
         
         # Return full step information
         return {
@@ -193,18 +193,18 @@ class InterviewEnv:
             "question": self.current_question["question"]
         }
     
-    def should_retry(self, reward: int) -> bool:
+    def should_retry(self, reward: float) -> bool:
         """
         Determine if agent should attempt to improve answer
         
         Args:
-            reward: Current reward value
+            reward: Current reward value (0.0 to 1.0)
             
         Returns:
             True if agent should retry (low reward and retries available)
         """
         can_retry = self.retry_count < self.max_retries
-        needs_retry = reward < 5  # Threshold for improvement
+        needs_retry = reward < 0.7  # Threshold for improvement
         
         return can_retry and needs_retry
     
@@ -254,3 +254,28 @@ class InterviewEnv:
             max_retries: Maximum number of attempts allowed
         """
         self.max_retries = max_retries
+    
+    def state(self) -> Dict[str, Any]:
+        """
+        Get current environment state
+        
+        OpenEnv-compliant state getter.
+        Returns current question and attempt information.
+        
+        Returns:
+            Dictionary containing:
+                - question: Current question text
+                - difficulty: Question difficulty level
+                - attempt: Current attempt number
+                
+        Raises:
+            ValueError: If environment not initialized (call reset() first)
+        """
+        if self.current_question is None:
+            raise ValueError("Environment not initialized. Call reset() first.")
+        
+        return {
+            "question": self.current_question["question"],
+            "difficulty": self.current_question["difficulty"],
+            "attempt": self.retry_count
+        }

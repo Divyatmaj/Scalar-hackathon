@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Frontend (not needed in backend container)
+frontend/
+
+# Development files
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+docs/
+README.md
+UPGRADED_README.md
+
+# Scripts
+setup.sh
+demo.py
+
+# Logs
+logs/
+*.log

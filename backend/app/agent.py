@@ -28,18 +28,19 @@ class InterviewAgent:
     - Real LLM API (GPT-4, Claude, etc.)
     """
     
-    def __init__(self, mode: str = "mock", api_key: str = None, model: str = "Qwen/Qwen3-Coder-Next:novita"):
+    def __init__(self, mode: str = "mock", api_key: str = None, model: str = None):
         """
         Initialize the AI agent
         
         Args:
             mode: "mock" for simulated answers or "api" for real LLM
             api_key: API key for HuggingFace (or from HF_TOKEN env variable)
-            model: Model name (default: Qwen/Qwen3-Coder-Next:novita)
+            model: Model name (or from MODEL_NAME env variable)
         """
         self.mode = mode
         self.api_key = api_key or os.getenv("HF_TOKEN")
-        self.model = model
+        self.model = model or os.getenv("MODEL_NAME", "Qwen/Qwen3-Coder-Next:novita")
+        self.base_url = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
         self.memory = []
         self.current_question_memory = []
         self.client = None
@@ -52,14 +53,16 @@ class InterviewAgent:
             self.mode = "mock"
     
     def _init_api_client(self):
-        """Initialize HuggingFace LLM client via OpenAI-compatible API"""
+        """Initialize LLM client via OpenAI-compatible API"""
         try:
             from openai import OpenAI
             self.client = OpenAI(
-                base_url="https://router.huggingface.co/v1",
+                base_url=self.base_url,
                 api_key=self.api_key
             )
-            print(f"🔌 HuggingFace client initialized for model: {self.model}")
+            print(f"🔌 API client initialized")
+            print(f"   Base URL: {self.base_url}")
+            print(f"   Model: {self.model}")
         except ImportError:
             print("⚠️  openai package not installed. Install with: pip install openai")
             print("⚠️  Falling back to mock mode")

@@ -1,5 +1,6 @@
 """
 FastAPI Backend for AI Interview Preparation RL Environment
+OpenEnv-compliant API implementation
 """
 
 from fastapi import FastAPI, HTTPException
@@ -45,6 +46,10 @@ current_config = {
 
 
 # Request/Response models
+class StepRequest(BaseModel):
+    action: str
+
+
 class AnswerRequest(BaseModel):
     answer: str
 
@@ -62,11 +67,69 @@ class ConfigRequest(BaseModel):
 def read_root():
     """Root endpoint"""
     return {
-        "message": "AI Interview Preparation RL Environment",
+        "message": "AI Interview Preparation RL Environment (OpenEnv Compliant)",
         "status": "running",
-        "endpoints": ["/question", "/answer", "/auto-run", "/stats", "/config"]
+        "endpoints": ["/reset", "/step", "/state", "/question", "/answer", "/auto-run", "/stats", "/config"]
     }
 
+
+# OpenEnv-compliant endpoints
+
+@app.post("/reset")
+def reset():
+    """OpenEnv: Reset environment and get new question"""
+    global current_state
+    
+    try:
+        current_state = env.reset()
+        # Return only the required fields for OpenEnv compliance
+        return {
+            "question": current_state["question"],
+            "difficulty": current_state["difficulty"],
+            "attempt": current_state["attempt"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/step")
+def step(request: StepRequest):
+    """OpenEnv: Submit action and get reward"""
+    global current_state
+    
+    if current_state is None:
+        raise HTTPException(status_code=400, detail="Environment not initialized. Call /reset first")
+    
+    try:
+        result = env.step(request.action)
+        
+        # Get current state
+        state_data = env.state()
+        
+        # Return OpenEnv-compliant response
+        return {
+            "reward": result["reward"],
+            "done": result["done"],
+            "state": state_data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/state")
+def get_state():
+    """OpenEnv: Get current environment state"""
+    if current_state is None:
+        raise HTTPException(status_code=400, detail="Environment not initialized. Call /reset first")
+    
+    try:
+        state_data = env.state()
+        return state_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Legacy endpoints (for backward compatibility with existing frontend)
 
 @app.get("/question")
 def get_question():
