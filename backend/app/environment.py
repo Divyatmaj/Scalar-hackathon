@@ -179,7 +179,7 @@ class InterviewEnv:
         
         # Determine if episode is done
         # Done if: high score OR max retries reached
-        done = (reward >= 0.9) or (self.retry_count >= self.max_retries)
+        done = (score >= 0.999) or (self.retry_count >= self.max_retries)
         
         # Return full step information
         return {
