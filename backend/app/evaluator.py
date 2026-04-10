@@ -105,7 +105,7 @@ class Evaluator:
         3. Calculate score as ratio: matched / total
         """
         if not answer or not answer.strip():
-            return 0.0, [], keywords
+            return 0.0001, [], keywords
         
         normalized_answer = self.normalize_text(answer)
         matched_keywords = []
@@ -127,6 +127,7 @@ class Evaluator:
             keyword_score = 0.5  # Neutral score if no keywords defined
         else:
             keyword_score = len(matched_keywords) / len(keywords)
+            keyword_score = max(0.0001, keyword_score)
         
         return keyword_score, matched_keywords, missing_keywords
     
@@ -160,7 +161,7 @@ class Evaluator:
         
         # Optimal range: 100-300 characters
         if 100 <= answer_length <= 300:
-            return 1.0
+            return 0.999
         elif answer_length < 100:
             # Scale from 0.5 to 1.0 as length approaches 100
             return 0.5 + 0.5 * (answer_length / 100.0)
@@ -198,6 +199,7 @@ class Evaluator:
         
         # Compute weighted hybrid score
         final_score = (self.keyword_weight * keyword_score) + (self.ai_weight * ai_score)
+        final_score = max(0.0001, min(final_score, 0.9999))
         
         # Generate structured feedback
         feedback = self._generate_feedback(
