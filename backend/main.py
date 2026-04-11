@@ -131,6 +131,8 @@ def act(request: StepRequest):
         current_state = env.reset()
 
     result = env.step(request.action)
+    result["reward"] = clamp_open_score(result["reward"])
+    result["score"] = clamp_open_score(result["score"])
     state_data = env.state()
 
     return selective_safe({
@@ -176,6 +178,8 @@ def auto_run(request: AutoRunRequest):
         previous_attempts=attempts,
     )
     result_1 = env.step(answer_1)
+    result_1["reward"] = clamp_open_score(result_1["reward"])
+    result_1["score"] = clamp_open_score(result_1["score"])
     agent.remember_attempt(
         question=question,
         answer=answer_1,
@@ -209,6 +213,8 @@ def auto_run(request: AutoRunRequest):
             previous_attempts=attempts,
         )
         result_2 = env.step(answer_2)
+        result_2["reward"] = clamp_open_score(result_2["reward"])
+        result_2["score"] = clamp_open_score(result_2["score"])
         agent.remember_attempt(
             question=question,
             answer=answer_2,

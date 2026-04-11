@@ -2,6 +2,15 @@ import React from 'react';
 import './ScoreDisplay.css';
 
 function ScoreDisplay({ score, reward, feedback }) {
+  const clampOpenValue = (value) => {
+    const numeric = Number(value);
+    const safeNumeric = Number.isFinite(numeric) ? numeric : 0.1;
+    return Math.min(0.9, Math.max(0.1, safeNumeric));
+  };
+
+  const safeScore = clampOpenValue(score);
+  const safeReward = clampOpenValue(reward);
+
   const getScoreColor = (score) => {
     if (score >= 0.8) return '#4caf50';
     if (score >= 0.5) return '#ff9800';
@@ -16,9 +25,6 @@ function ScoreDisplay({ score, reward, feedback }) {
     return '⚠️';
   };
 
-  // 🔥 FIX: force reward into safe range BEFORE display
-  const safeReward = Math.min(0.9, Math.max(0.1, reward));
-
   return (
     <div className="score-display">
       <h3>📊 Evaluation Results</h3>
@@ -28,16 +34,16 @@ function ScoreDisplay({ score, reward, feedback }) {
           <div className="metric-label">Score</div>
           <div 
             className="metric-value"
-            style={{ color: getScoreColor(score) }}
+            style={{ color: getScoreColor(safeScore) }}
           >
-            {(score * 100).toFixed(1)}%
+            {(safeScore * 100).toFixed(1)}%
           </div>
           <div className="metric-bar">
             <div 
               className="metric-fill"
               style={{ 
-                width: `${score * 100}%`,
-                backgroundColor: getScoreColor(score)
+                width: `${safeScore * 100}%`,
+                backgroundColor: getScoreColor(safeScore)
               }}
             />
           </div>

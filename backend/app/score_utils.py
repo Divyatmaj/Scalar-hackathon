@@ -13,13 +13,11 @@ def clamp_open_score(value: float) -> float:
     score = float(value)
     if not math.isfinite(score):
         raise ValueError(f"Score must be finite, got: {score}")
-    clamped = max(MIN_OPEN_SCORE, min(score, MAX_OPEN_SCORE))
-    quantized = round(clamped, SCORE_DECIMALS)
-
-    # 🔥 CRITICAL FIX: clamp again AFTER rounding
-    quantized = max(MIN_OPEN_SCORE, min(quantized, MAX_OPEN_SCORE))
-
-    return quantized
+    score = max(MIN_OPEN_SCORE, min(score, MAX_OPEN_SCORE))
+    factor = 10 ** SCORE_DECIMALS
+    score = math.floor(score * factor) / factor
+    score = max(MIN_OPEN_SCORE, min(score, MAX_OPEN_SCORE))
+    return score
 
 
 def format_open_score(value: float, decimals: int = SCORE_DECIMALS) -> str:
@@ -27,10 +25,4 @@ def format_open_score(value: float, decimals: int = SCORE_DECIMALS) -> str:
     Format score as fixed-point decimal in [0.1, 0.9].
     """
     clamped = clamp_open_score(value)
-    rounded = round(clamped, decimals)
-    quantum = 10 ** (-decimals)
-    if rounded < MIN_OPEN_SCORE:
-        rounded = MIN_OPEN_SCORE if decimals == SCORE_DECIMALS else MIN_OPEN_SCORE + quantum
-    elif rounded > MAX_OPEN_SCORE:
-        rounded = MAX_OPEN_SCORE if decimals == SCORE_DECIMALS else MAX_OPEN_SCORE - quantum
-    return f"{rounded:.{decimals}f}"
+    return f"{clamped:.{decimals}f}"

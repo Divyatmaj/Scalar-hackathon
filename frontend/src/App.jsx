@@ -18,8 +18,11 @@ function App() {
   const [rewardHistory, setRewardHistory] = useState([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // 🔥 GLOBAL SAFE CLAMP FUNCTION
-  const safeReward = (val) => Math.min(0.9, Math.max(0.1, val));
+  const clampOpenValue = (val) => {
+    const numeric = Number(val);
+    const safeNumeric = Number.isFinite(numeric) ? numeric : 0.1;
+    return Math.min(0.9, Math.max(0.1, safeNumeric));
+  };
 
   const getQuestion = async () => {
     setLoading(true);
@@ -60,13 +63,12 @@ function App() {
       const finalAttempt = episode.attempt_2 || episode.attempt_1;
       setAnswer(finalAttempt.answer);
       setResult({
-        reward: finalAttempt.reward,
-        score: finalAttempt.score,
+        reward: clampOpenValue(finalAttempt.reward),
+        score: clampOpenValue(finalAttempt.score),
         feedback: finalAttempt.feedback
       });
 
-      // 🔥 FIX: store SAFE reward
-      setRewardHistory([...rewardHistory, safeReward(finalAttempt.reward)]);
+      setRewardHistory([...rewardHistory, clampOpenValue(finalAttempt.reward)]);
       
     } catch (error) {
       console.error('Error generating answer:', error);
@@ -97,8 +99,7 @@ function App() {
       
       setResult(response.data.result);
 
-      // 🔥 FIX: store SAFE reward
-      setRewardHistory([...rewardHistory, safeReward(response.data.result.reward)]);
+      setRewardHistory([...rewardHistory, clampOpenValue(response.data.result.reward)]);
       
     } catch (error) {
       console.error('Error submitting answer:', error);
@@ -196,7 +197,7 @@ function App() {
                     style={{ height: `${reward * 100}px` }}
                   >
                     {/* 🔥 FIX HERE */}
-                    <span className="reward-value">{safeReward(reward).toFixed(1)}</span>
+                    <span className="reward-value">{clampOpenValue(reward).toFixed(1)}</span>
                   </div>
                   <span className="episode-number">E{index + 1}</span>
                 </div>
@@ -208,7 +209,7 @@ function App() {
               <div>Total Episodes: {rewardHistory.length}</div>
               <div>
                 Avg Reward: {
-                  safeReward(
+                  clampOpenValue(
                     rewardHistory.reduce((a, b) => a + b, 0) / rewardHistory.length
                   ).toFixed(1)
                 }

@@ -164,6 +164,8 @@ class InterviewEnv:
         
         # Compute reward signal
         reward = clamp_open_score(self.evaluator.compute_reward(score))
+        score = clamp_open_score(score)
+        reward = clamp_open_score(reward)
         
         # Increment retry counter
         self.retry_count += 1
