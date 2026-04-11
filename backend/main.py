@@ -282,8 +282,8 @@ def stats():
     if not history:
         return selective_safe({
             "total_attempts": 0,
-            "average_score": 0.001,
-            "average_reward": 0.001
+            "average_score": 0.1,
+            "average_reward": 0.1
         })
 
     avg_score = sum(h["score"] for h in history) / len(history)

@@ -94,7 +94,7 @@ def run_inference():
         result = env.step(answer)
 
         score = clamp_open_score(result["score"])
-        print(f"score={format_open_score(score, decimals=6)}")
+        print(f"score={format_open_score(score, decimals=1)}")
 
         # END
         print("[END]")

@@ -10,10 +10,10 @@ function ScoreDisplay({ score, reward, feedback }) {
   };
 
   const getRewardEmoji = (reward) => {
-    if (reward >= 10) return '🏆';
-    if (reward >= 5) return '👍';
-    if (reward >= 0) return '🤔';
-    return '❌';
+    if (reward >= 0.8) return '🏆';
+    if (reward >= 0.6) return '👍';
+    if (reward >= 0.4) return '🤔';
+    return '⚠️';
   };
 
   return (
@@ -42,8 +42,8 @@ function ScoreDisplay({ score, reward, feedback }) {
 
         <div className="metric-card">
           <div className="metric-label">Reward</div>
-          <div className={`metric-value reward-${reward >= 5 ? 'positive' : reward < 0 ? 'negative' : 'neutral'}`}>
-            {getRewardEmoji(reward)} {reward > 0 ? '+' : ''}{reward.toFixed(3)}
+          <div className={`metric-value reward-${reward >= 0.7 ? 'positive' : reward <= 0.3 ? 'negative' : 'neutral'}`}>
+            {getRewardEmoji(reward)} {reward.toFixed(1)}
           </div>
         </div>
       </div>

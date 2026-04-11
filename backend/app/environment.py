@@ -181,7 +181,7 @@ class InterviewEnv:
         
         # Determine if episode is done
         # Done if: high score OR max retries reached
-        done = (score >= 0.999) or (self.retry_count >= self.max_retries)
+        done = (score >= 0.9) or (self.retry_count >= self.max_retries)
         
         # Return full step information
         return {
@@ -233,9 +233,9 @@ class InterviewEnv:
         if not self.episode_history:
             return {
                 "total_attempts": 0,
-                "best_score": 0.001,
-                "improvement": 0.001,
-                "final_reward": 0.001
+                "best_score": 0.1,
+                "improvement": 0.1,
+                "final_reward": 0.1
             }
         
         scores = [h["score"] for h in self.episode_history]

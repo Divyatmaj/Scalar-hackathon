@@ -224,12 +224,12 @@ function App() {
               {rewardHistory.map((reward, index) => (
                 <div key={index} className="reward-bar-container">
                   <div 
-                    className={`reward-bar ${reward >= 5 ? 'positive' : reward < 0 ? 'negative' : 'neutral'}`}
+                    className={`reward-bar ${reward >= 0.7 ? 'positive' : reward <= 0.3 ? 'negative' : 'neutral'}`}
                     style={{
-                      height: `${Math.abs(reward) * 10 + 20}px`
+                      height: `${reward * 100}px`
                     }}
                   >
-                    <span className="reward-value">{reward.toFixed(3)}</span>
+                    <span className="reward-value">{reward.toFixed(1)}</span>
                   </div>
                   <span className="episode-number">E{index + 1}</span>
                 </div>
@@ -237,7 +237,7 @@ function App() {
             </div>
             <div className="stats">
               <div>Total Episodes: {rewardHistory.length}</div>
-              <div>Avg Reward: {(rewardHistory.reduce((a, b) => a + b, 0) / rewardHistory.length).toFixed(3)}</div>
+              <div>Avg Reward: {(rewardHistory.reduce((a, b) => a + b, 0) / rewardHistory.length).toFixed(1)}</div>
             </div>
           </div>
         )}
