@@ -74,12 +74,31 @@ class AnswerRequest(BaseModel):
     answer: str
 
 
+class AutoRunRequest(BaseModel):
+    use_retry: bool = True
+
+
+class ConfigRequest(BaseModel):
+    api_key: str
+    model: str = "Qwen/Qwen3-Coder-Next:novita"
+
+
 # Root
 @app.get("/")
 def read_root():
     return selective_safe({
         "message": "AI Interview Environment",
-        "status": "running"
+        "status": "running",
+        "endpoints": [
+            "/reset",
+            "/step",
+            "/state",
+            "/question",
+            "/answer",
+            "/auto-run",
+            "/config",
+            "/stats",
+        ],
     })
 
 
@@ -130,7 +149,122 @@ def step(request: StepRequest):
 # Answer
 @app.post("/answer")
 def answer(request: AnswerRequest):
-    return act(StepRequest(action=request.answer))
+    result = act(StepRequest(action=request.answer))
+    return selective_safe({
+        "status": "success",
+        "result": result,
+    })
+
+
+# Legacy endpoint (frontend compatibility)
+@app.post("/auto-run")
+def auto_run(request: AutoRunRequest):
+    global current_state
+
+    current_state = env.reset()
+    question = current_state["question"]
+    difficulty = current_state["difficulty"]
+    missing_keywords = None
+    feedback = None
+    attempts = []
+
+    answer_1 = agent.generate_answer(
+        question=question,
+        feedback=feedback,
+        missing_keywords=missing_keywords,
+        previous_attempts=attempts,
+    )
+    result_1 = env.step(answer_1)
+    agent.remember_attempt(
+        question=question,
+        answer=answer_1,
+        score=result_1["score"],
+        feedback=result_1["feedback"],
+        attempt=result_1["attempt"],
+    )
+    attempt_1 = {
+        "answer": answer_1,
+        "score": result_1["score"],
+        "reward": result_1["reward"],
+        "feedback": result_1["feedback"],
+    }
+
+    episode = {
+        "question": question,
+        "difficulty": difficulty,
+        "attempt_1": attempt_1,
+    }
+
+    if request.use_retry and env.should_retry(result_1["score"]):
+        attempts.append({
+            "answer": answer_1,
+            "score": result_1["score"],
+            "feedback": result_1["feedback"],
+        })
+        answer_2 = agent.generate_answer(
+            question=question,
+            feedback=result_1["feedback"],
+            missing_keywords=result_1.get("missing_keywords"),
+            previous_attempts=attempts,
+        )
+        result_2 = env.step(answer_2)
+        agent.remember_attempt(
+            question=question,
+            answer=answer_2,
+            score=result_2["score"],
+            feedback=result_2["feedback"],
+            attempt=result_2["attempt"],
+        )
+        episode["attempt_2"] = {
+            "answer": answer_2,
+            "score": result_2["score"],
+            "reward": result_2["reward"],
+            "feedback": result_2["feedback"],
+        }
+        episode["improvement"] = result_2["score"] - result_1["score"]
+
+    return selective_safe({
+        "status": "success",
+        "episode": episode,
+    })
+
+
+# Legacy endpoint (frontend compatibility)
+@app.get("/config")
+def get_config():
+    return selective_safe({
+        "status": "success",
+        "config": {
+            "model": agent.model,
+            "api_key_set": bool(agent.api_key),
+            "client_initialized": bool(agent.client),
+        },
+    })
+
+
+# Legacy endpoint (frontend compatibility)
+@app.post("/config")
+def update_config(request: ConfigRequest):
+    global agent
+    if not request.api_key.strip():
+        raise HTTPException(status_code=400, detail="api_key cannot be empty")
+
+    agent = InterviewAgent(mode="api", api_key=request.api_key.strip(), model=request.model)
+    if agent.mode != "api" or not agent.client:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not initialize API client. Check token/model configuration.",
+        )
+
+    return selective_safe({
+        "status": "success",
+        "message": "Configuration updated successfully",
+        "config": {
+            "model": agent.model,
+            "api_key_set": True,
+            "client_initialized": True,
+        },
+    })
 
 
 # State

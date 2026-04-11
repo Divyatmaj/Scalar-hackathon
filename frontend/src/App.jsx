@@ -70,7 +70,8 @@ function App() {
       
     } catch (error) {
       console.error('Error generating answer:', error);
-      alert('Failed to generate answer. Check if OPENAI_API_KEY is set (or it will use mock answers)');
+      const detail = error?.response?.data?.detail;
+      alert(detail ? `Failed to generate answer: ${detail}` : 'Failed to generate answer. Check backend logs/config.');
     } finally {
       setLoading(false);
     }
