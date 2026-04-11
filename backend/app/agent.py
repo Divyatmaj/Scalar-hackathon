@@ -12,6 +12,8 @@ Features:
 import os
 from typing import List, Dict, Any, Optional
 
+from .score_utils import clamp_open_score
+
 
 class InterviewAgent:
     """
@@ -258,10 +260,11 @@ Provide a well-structured answer:"""
             feedback: Feedback received
             attempt: Attempt number
         """
+        safe_score = clamp_open_score(score)
         memory_entry = {
             "question": question,
             "answer": answer,
-            "score": score,
+            "score": safe_score,
             "feedback": feedback,
             "attempt": attempt
         }
@@ -293,7 +296,7 @@ Provide a well-structured answer:"""
         if not self.memory:
             return {
                 "total_attempts": 0,
-                "average_score": 0.0,
+                "average_score": 0.1,
                 "improvement_rate": 0.0,
                 "total_retries": 0
             }
@@ -310,7 +313,7 @@ Provide a well-structured answer:"""
         
         return {
             "total_attempts": len(self.memory),
-            "average_score": sum(scores) / len(scores),
+            "average_score": clamp_open_score(sum(scores) / len(scores)),
             "improvement_rate": improvement_rate,
             "total_retries": len(retries)
         }

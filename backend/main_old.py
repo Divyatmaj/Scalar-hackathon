@@ -9,6 +9,7 @@ from typing import Optional
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
+from app.score_utils import clamp_open_score
 
 # Load environment variables from .env file
 load_dotenv()
@@ -19,6 +20,24 @@ sys.path.append(str(Path(__file__).parent))
 from env.interview_env import InterviewEnv
 from evaluator.evaluator import Evaluator
 from agent.llm_agent import LLMAgent
+
+
+def safe_score(x):
+    return clamp_open_score(x)
+
+
+def selective_safe(obj):
+    if isinstance(obj, dict):
+        new_obj = {}
+        for k, v in obj.items():
+            if ("score" in k) or ("reward" in k):
+                new_obj[k] = safe_score(v)
+            else:
+                new_obj[k] = selective_safe(v)
+        return new_obj
+    elif isinstance(obj, list):
+        return [selective_safe(x) for x in obj]
+    return obj
 
 
 # Initialize FastAPI app
@@ -63,11 +82,11 @@ class ConfigRequest(BaseModel):
 @app.get("/")
 def read_root():
     """Root endpoint"""
-    return {
+    return selective_safe({
         "message": "AI Interview Preparation RL Environment",
         "status": "running",
         "endpoints": ["/question", "/answer", "/auto-run", "/stats", "/config"]
-    }
+    })
 
 
 @app.get("/question")
@@ -86,10 +105,10 @@ def get_question():
     
     try:
         current_state = env.reset()
-        return {
+        return selective_safe({
             "status": "success",
             "state": current_state
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -121,10 +140,12 @@ def submit_answer(request: AnswerRequest):
     
     try:
         result = env.step(request.answer)
-        return {
+        result["score"] = clamp_open_score(result["score"])
+        result["reward"] = clamp_open_score(result["reward"])
+        return selective_safe({
             "status": "success",
             "result": result
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -152,6 +173,8 @@ def auto_run(request: AutoRunRequest):
         
         # Evaluate
         result = env.step(answer)
+        result["score"] = clamp_open_score(result["score"])
+        result["reward"] = clamp_open_score(result["reward"])
         
         episode_data = {
             "question": question,
@@ -183,6 +206,8 @@ def auto_run(request: AutoRunRequest):
             
             # Evaluate again
             retry_result = env.step(improved_answer)
+            retry_result["score"] = clamp_open_score(retry_result["score"])
+            retry_result["reward"] = clamp_open_score(retry_result["reward"])
             
             episode_data["attempt_2"] = {
                 "answer": improved_answer,
@@ -193,10 +218,10 @@ def auto_run(request: AutoRunRequest):
             
             episode_data["improvement"] = retry_result["score"] - result["score"]
         
-        return {
+        return selective_safe({
             "status": "success",
             "episode": episode_data
-        }
+        })
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -224,7 +249,7 @@ def update_config(request: ConfigRequest):
         # Reinitialize agent with new configuration
         agent = LLMAgent(api_key=request.api_key, model=request.model)
         
-        return {
+        return selective_safe({
             "status": "success",
             "message": "Configuration updated successfully",
             "config": {
@@ -232,7 +257,7 @@ def update_config(request: ConfigRequest):
                 "api_key_set": bool(request.api_key),
                 "client_initialized": bool(agent.client)
             }
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Configuration error: {str(e)}")
 
@@ -245,14 +270,14 @@ def get_config():
     Returns:
         Current configuration (without exposing full API key)
     """
-    return {
+    return selective_safe({
         "status": "success",
         "config": {
             "model": current_config["model"],
             "api_key_set": bool(current_config["api_key"]),
             "client_initialized": bool(agent.client)
         }
-    }
+    })
 
 
 @app.get("/stats")
@@ -261,27 +286,27 @@ def get_stats():
     try:
         history = env.get_history()
         if not history:
-            return {
+            return selective_safe({
                 "status": "success",
                 "stats": {
                     "total_attempts": 0,
-                    "average_score": 0,
-                    "average_reward": 0
+                    "average_score": 0.1,
+                    "average_reward": 0.1
                 }
-            }
+            })
         
         avg_score = sum(h["score"] for h in history) / len(history)
         avg_reward = sum(h["reward"] for h in history) / len(history)
         
-        return {
+        return selective_safe({
             "status": "success",
             "stats": {
                 "total_attempts": len(history),
-                "average_score": round(avg_score, 3),
-                "average_reward": round(avg_reward, 2),
+                "average_score": clamp_open_score(avg_score),
+                "average_reward": clamp_open_score(avg_reward),
                 "history": history
             }
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
