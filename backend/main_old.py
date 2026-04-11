@@ -9,7 +9,6 @@ from typing import Optional
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
-from app.score_utils import clamp_open_score
 
 # Load environment variables from .env file
 load_dotenv()
@@ -17,9 +16,16 @@ load_dotenv()
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent))
 
-from env.interview_env import InterviewEnv
-from evaluator.evaluator import Evaluator
-from agent.llm_agent import LLMAgent
+try:
+    from .app.score_utils import clamp_open_score
+    from .app.environment import InterviewEnv
+    from .app.evaluator import Evaluator
+    from .app.agent import InterviewAgent as LLMAgent
+except ImportError:
+    from app.score_utils import clamp_open_score
+    from app.environment import InterviewEnv
+    from app.evaluator import Evaluator
+    from app.agent import InterviewAgent as LLMAgent
 
 
 def safe_score(x):

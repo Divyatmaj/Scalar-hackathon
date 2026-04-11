@@ -24,5 +24,6 @@ def format_open_score(value: float, decimals: int = SCORE_DECIMALS) -> str:
     """
     Format score as fixed-point decimal in [0.1, 0.9].
     """
+    decimals = max(1, int(decimals))
     clamped = clamp_open_score(value)
     return f"{clamped:.{decimals}f}"

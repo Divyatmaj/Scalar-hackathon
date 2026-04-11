@@ -242,12 +242,14 @@ class InterviewEnv:
         
         scores = [h["score"] for h in self.episode_history]
         rewards = [h["reward"] for h in self.episode_history]
+        best_score = clamp_open_score(max(scores))
+        final_reward = clamp_open_score(rewards[-1])
         
         return {
             "total_attempts": len(self.episode_history),
-            "best_score": max(scores),
+            "best_score": best_score,
             "improvement": scores[-1] - scores[0] if len(scores) > 1 else 0.0,
-            "final_reward": rewards[-1]
+            "final_reward": final_reward
         }
     
     def set_max_retries(self, max_retries: int):
