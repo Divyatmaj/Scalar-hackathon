@@ -18,7 +18,7 @@ Design Philosophy:
 import re
 from typing import Dict, List, Any, Tuple
 
-from .score_utils import clamp_open_score
+from .score_utils import clamp_open_score, MAX_OPEN_SCORE
 
 
 class Evaluator:
@@ -103,8 +103,8 @@ class Evaluator:
             return clamp_open_score(0.5 + 0.5 * (answer_length / 100.0))
         else:
             excess = answer_length - 300
-            penalty = min(excess / 500.0, 0.3)
-            return clamp_open_score(max(0.7, 1.0 - penalty))
+            penalty = min(excess / 500.0, 0.2)
+            return clamp_open_score(max(0.7, MAX_OPEN_SCORE - penalty))
     
     def evaluate(self, answer: str, keywords: List[str], question: str = None) -> Dict[str, Any]:
         keyword_score, matched, missing = self.evaluate_keywords(answer, keywords)

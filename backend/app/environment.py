@@ -133,7 +133,7 @@ class InterviewEnv:
         Returns:
             Dictionary containing:
                 - reward: Integer reward signal (+10, +5, 0, -5)
-                - score: Float score (0.0 to 1.0)
+                - score: Float score (0.1 to 0.9)
                 - feedback: Structured feedback message
                 - matched_keywords: List of correctly mentioned keywords
                 - missing_keywords: List of missed keywords
@@ -202,7 +202,7 @@ class InterviewEnv:
         Determine if agent should attempt to improve answer
         
         Args:
-            reward: Current reward value (0.0 to 1.0)
+            reward: Current reward value (0.1 to 0.9)
             
         Returns:
             True if agent should retry (low reward and retries available)

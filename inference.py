@@ -35,10 +35,14 @@ def _format_action_for_log(action: str) -> str:
     "[END]": "(END)",
     "task_id=": "task_id\\u003d",
     "score=": "score\\u003d",
+    "reward=": "reward\\u003d",
     }
 
     for src, dst in token_map.items():
         text = text.replace(src, dst)
+
+    # Defang loose score/reward patterns that external parsers may pick up from action text.
+    text = re.sub(r"(?i)\b(score|reward)\s*[:=]\s*[+-]?\d+(?:\.\d+)?\b", r"\1 <masked>", text)
 
     return text
 
@@ -83,7 +87,9 @@ def run_inference():
         question = task["question"]
 
         # Generate answer
-        answer = agent.generate_answer(question)
+        # Keep inference stdout parser-stable even if API client prints runtime warnings/errors.
+        with contextlib.redirect_stdout(io.StringIO()):
+            answer = agent.generate_answer(question)
         action_for_log = _format_action_for_log(answer)
 
         # STEP

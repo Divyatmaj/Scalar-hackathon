@@ -29,6 +29,8 @@ except ImportError:
 
 
 def safe_score(x):
+    if isinstance(x, (dict, list)):
+        return selective_safe(x)
     return clamp_open_score(x)
 
 
