@@ -6,6 +6,7 @@ Runs complete episode over all tasks with exact logging format
 import os
 import sys
 import json
+import re
 from pathlib import Path
 
 # Add backend to path
@@ -14,6 +15,28 @@ sys.path.insert(0, str(Path(__file__).parent / "backend"))
 from app.environment import InterviewEnv
 from app.evaluator import Evaluator
 from app.agent import InterviewAgent
+
+
+def _format_action_for_log(action: str) -> str:
+    """
+    Format model output to keep OpenEnv logs parser-safe.
+    """
+    text = "" if action is None else str(action)
+    text = re.sub(r"[\r\n\t]+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+
+    # Neutralize parser-sensitive tokens in the action log line only.
+    token_map = {
+        "[START]": "(START)",
+        "[STEP]": "(STEP)",
+        "[END]": "(END)",
+        "task_id=": "task_id\\u003d",
+        "score=": "score\\u003d",
+    }
+    for src, dst in token_map.items():
+        text = text.replace(src, dst)
+
+    return text
 
 
 def run_inference():
@@ -69,10 +92,11 @@ def run_inference():
         
         # Generate answer
         answer = agent.generate_answer(question)
+        action_for_log = _format_action_for_log(answer)
         
         # Print STEP marker with action
         print(f"[STEP]")
-        print(f"action={answer}")
+        print(f"action={action_for_log}")
         
         # Evaluate
         result = env.step(answer)
