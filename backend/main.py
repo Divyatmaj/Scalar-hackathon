@@ -135,9 +135,12 @@ def step(request: StepRequest):
         # Get current state
         state_data = env.state()
         
+        # Clamp all numeric values to strict (0, 1) for OpenEnv compliance
+        safe_reward = max(0.001, min(float(result["reward"]), 0.999))
+        
         # Return OpenEnv-compliant response
         return {
-            "reward": result["reward"],
+            "reward": safe_reward,
             "done": result["done"],
             "state": state_data
         }
@@ -185,6 +188,9 @@ def submit_answer(request: AnswerRequest):
     
     try:
         result = env.step(request.answer)
+        # Clamp numeric fields for OpenEnv compliance
+        result["score"] = max(0.001, min(float(result["score"]), 0.999))
+        result["reward"] = max(0.001, min(float(result["reward"]), 0.999))
         return {
             "status": "success",
             "result": result
@@ -209,13 +215,17 @@ def auto_run(request: AutoRunRequest):
         # Evaluate
         result = env.step(answer)
         
+        # Helper: clamp numeric value to strict (0, 1) for OpenEnv compliance
+        def _clamp(v):
+            return max(0.001, min(float(v), 0.999))
+        
         episode_data = {
             "question": question,
             "difficulty": current_state["difficulty"],
             "attempt_1": {
                 "answer": answer,
-                "score": result["score"],
-                "reward": result["reward"],
+                "score": _clamp(result["score"]),
+                "reward": _clamp(result["reward"]),
                 "feedback": result["feedback"]
             }
         }
@@ -246,12 +256,12 @@ def auto_run(request: AutoRunRequest):
             
             episode_data["attempt_2"] = {
                 "answer": improved_answer,
-                "score": retry_result["score"],
-                "reward": retry_result["reward"],
+                "score": _clamp(retry_result["score"]),
+                "reward": _clamp(retry_result["reward"]),
                 "feedback": retry_result["feedback"]
             }
             
-            episode_data["improvement"] = retry_result["score"] - result["score"]
+            episode_data["improvement"] = _clamp(retry_result["score"] - result["score"])
         
         return {
             "status": "success",
@@ -316,20 +326,24 @@ def get_stats():
                 "status": "success",
                 "stats": {
                     "total_attempts": 0,
-                    "average_score": 0,
-                    "average_reward": 0
+                    "average_score": 0.001,
+                    "average_reward": 0.001
                 }
             }
         
         avg_score = sum(h["score"] for h in history) / len(history)
         avg_reward = sum(h["reward"] for h in history) / len(history)
         
+        # Clamp averages to strict (0, 1) for OpenEnv compliance
+        avg_score = max(0.001, min(avg_score, 0.999))
+        avg_reward = max(0.001, min(avg_reward, 0.999))
+        
         return {
             "status": "success",
             "stats": {
                 "total_attempts": len(history),
                 "average_score": round(avg_score, 3),
-                "average_reward": round(avg_reward, 2),
+                "average_reward": round(avg_reward, 3),
                 "history": history
             }
         }

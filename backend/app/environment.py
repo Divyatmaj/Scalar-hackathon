@@ -231,9 +231,9 @@ class InterviewEnv:
         if not self.episode_history:
             return {
                 "total_attempts": 0,
-                "best_score": 0.0,
-                "improvement": 0.0,
-                "final_reward": 0
+                "best_score": 0.001,
+                "improvement": 0.001,
+                "final_reward": 0.001
             }
         
         scores = [h["score"] for h in self.episode_history]
