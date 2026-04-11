@@ -98,5 +98,5 @@ def run_inference():
         print("[END]")
 
 
-if name == "main":
+if __name__ == "__main__":
     run_inference()
