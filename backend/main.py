@@ -91,6 +91,17 @@ def reset():
     return selective_safe(current_state)
 
 
+# Legacy endpoint (frontend compatibility)
+@app.get("/question")
+def get_question():
+    global current_state
+    current_state = env.reset()
+    return selective_safe({
+        "status": "success",
+        "state": current_state
+    })
+
+
 # 🔥 REQUIRED BY VALIDATOR
 @app.post("/act")
 def act(request: StepRequest):
