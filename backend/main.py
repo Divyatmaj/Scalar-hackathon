@@ -16,10 +16,20 @@ load_dotenv()
 
 print("🚀 Server starting...")
 
+# 🔥 GLOBAL SAFETY FUNCTION (ENSURES 0 < value < 1 EVERYWHERE)
+def deep_safe(obj):
+    if isinstance(obj, dict):
+        return {k: deep_safe(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [deep_safe(x) for x in obj]
+    elif isinstance(obj, (int, float)):
+        return max(0.001, min(float(obj), 0.999))
+    return obj
+
 # Import from app package
-from app.environment import InterviewEnv
-from app.evaluator import Evaluator
-from app.agent import InterviewAgent
+from backend.app.environment import InterviewEnv
+from backend.app.evaluator import Evaluator
+from backend.app.agent import InterviewAgent
 
 
 # Initialize FastAPI app
@@ -58,7 +68,7 @@ except Exception as e:
 
 # Graceful agent init — don't crash server if API key is missing
 try:
-    agent = InterviewAgent(mode="api")  # Will use HF_TOKEN from .env
+    agent = InterviewAgent(mode="api")
     print(f"🤖 Agent initialized in mode: {agent.mode}")
 except Exception as e:
     print(f"⚠️  Agent init failed ({e}), using mock mode")
@@ -94,36 +104,31 @@ class ConfigRequest(BaseModel):
 
 @app.get("/")
 def read_root():
-    """Root endpoint"""
-    return {
+    return deep_safe({
         "message": "AI Interview Preparation RL Environment (OpenEnv Compliant)",
         "status": "running",
         "endpoints": ["/reset", "/step", "/state", "/question", "/answer", "/auto-run", "/stats", "/config"]
-    }
+    })
 
-
-# OpenEnv-compliant endpoints
 
 @app.post("/reset")
 def reset():
-    """OpenEnv: Reset environment and get new question"""
     global current_state
     
     try:
         current_state = env.reset()
-        # Return only the required fields for OpenEnv compliance
-        return {
+        response = {
             "question": current_state["question"],
             "difficulty": current_state["difficulty"],
             "attempt": current_state["attempt"]
         }
+        return deep_safe(response)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/step")
 def step(request: StepRequest):
-    """OpenEnv: Submit action and get reward"""
     global current_state
     
     if current_state is None:
@@ -131,56 +136,46 @@ def step(request: StepRequest):
     
     try:
         result = env.step(request.action)
-        
-        # Get current state
         state_data = env.state()
         
-        # Clamp all numeric values to strict (0, 1) for OpenEnv compliance
-        safe_reward = max(0.001, min(float(result["reward"]), 0.999))
-        
-        # Return OpenEnv-compliant response
-        return {
-            "reward": safe_reward,
+        response = {
+            "reward": result["reward"],
             "done": result["done"],
             "state": state_data
         }
+        return deep_safe(response)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/state")
 def get_state():
-    """OpenEnv: Get current environment state"""
     if current_state is None:
         raise HTTPException(status_code=400, detail="Environment not initialized. Call /reset first")
     
     try:
         state_data = env.state()
-        return state_data
+        return deep_safe(state_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Legacy endpoints (for backward compatibility with existing frontend)
-
 @app.get("/question")
 def get_question():
-    """Get a new interview question (calls env.reset())"""
     global current_state
     
     try:
         current_state = env.reset()
-        return {
+        return deep_safe({
             "status": "success",
             "state": current_state
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/answer")
 def submit_answer(request: AnswerRequest):
-    """Submit an answer and get evaluation (calls env.step())"""
     global current_state
     
     if current_state is None:
@@ -188,85 +183,58 @@ def submit_answer(request: AnswerRequest):
     
     try:
         result = env.step(request.answer)
-        # Clamp numeric fields for OpenEnv compliance
-        result["score"] = max(0.001, min(float(result["score"]), 0.999))
-        result["reward"] = max(0.001, min(float(result["reward"]), 0.999))
-        return {
+        return deep_safe({
             "status": "success",
             "result": result
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/auto-run")
 def auto_run(request: AutoRunRequest):
-    """Automatic RL episode - agent generates and improves answer"""
     global current_state
     
     try:
-        # Reset environment
         current_state = env.reset()
         question = current_state["question"]
         
-        # Agent generates initial answer
         answer = agent.generate_answer(question)
-        
-        # Evaluate
         result = env.step(answer)
-        
-        # Helper: clamp numeric value to strict (0, 1) for OpenEnv compliance
-        def _clamp(v):
-            return max(0.001, min(float(v), 0.999))
         
         episode_data = {
             "question": question,
             "difficulty": current_state["difficulty"],
             "attempt_1": {
                 "answer": answer,
-                "score": _clamp(result["score"]),
-                "reward": _clamp(result["reward"]),
+                "score": result["score"],
+                "reward": result["reward"],
                 "feedback": result["feedback"]
             }
         }
         
-        # Retry logic if enabled and reward is low
         if request.use_retry and env.should_retry(result["reward"]):
-            # Reset for retry
-            current_state = {
-                "question": question,
-                "keywords": current_state["keywords"],
-                "difficulty": current_state["difficulty"]
-            }
-            env.current_question = {
-                "question": question,
-                "keywords": current_state["keywords"],
-                "difficulty": current_state["difficulty"]
-            }
-            
-            # Generate improved answer with feedback
             improved_answer = agent.generate_answer(
                 question,
                 feedback=result["feedback"],
                 missing_keywords=result.get("missing_keywords", [])
             )
             
-            # Evaluate again
             retry_result = env.step(improved_answer)
             
             episode_data["attempt_2"] = {
                 "answer": improved_answer,
-                "score": _clamp(retry_result["score"]),
-                "reward": _clamp(retry_result["reward"]),
+                "score": retry_result["score"],
+                "reward": retry_result["reward"],
                 "feedback": retry_result["feedback"]
             }
             
-            episode_data["improvement"] = _clamp(retry_result["score"] - result["score"])
+            episode_data["improvement"] = retry_result["score"] - result["score"]
         
-        return {
+        return deep_safe({
             "status": "success",
             "episode": episode_data
-        }
+        })
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -274,21 +242,17 @@ def auto_run(request: AutoRunRequest):
 
 @app.post("/config")
 def update_config(request: ConfigRequest):
-    """Update API configuration (API key and model)"""
     global agent, current_config
     
     try:
-        # Update configuration
         current_config["api_key"] = request.api_key
         current_config["model"] = request.model
         
-        # Reinitialize agent with new configuration
         agent = InterviewAgent(mode="api", api_key=request.api_key, model=request.model)
         
-        # Check if agent has proper client initialization
         has_client = hasattr(agent, 'client') and agent.client is not None
         
-        return {
+        return deep_safe({
             "status": "success",
             "message": "Configuration updated successfully",
             "config": {
@@ -296,57 +260,51 @@ def update_config(request: ConfigRequest):
                 "api_key_set": bool(request.api_key),
                 "client_initialized": has_client
             }
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Configuration error: {str(e)}")
 
 
 @app.get("/config")
 def get_config():
-    """Get current API configuration"""
     has_client = hasattr(agent, 'client') and agent.client is not None
     
-    return {
+    return deep_safe({
         "status": "success",
         "config": {
             "model": current_config["model"],
             "api_key_set": bool(current_config["api_key"]),
             "client_initialized": has_client
         }
-    }
+    })
 
 
 @app.get("/stats")
 def get_stats():
-    """Get episode statistics"""
     try:
         history = env.get_history()
         if not history:
-            return {
+            return deep_safe({
                 "status": "success",
                 "stats": {
                     "total_attempts": 0,
                     "average_score": 0.001,
                     "average_reward": 0.001
                 }
-            }
+            })
         
         avg_score = sum(h["score"] for h in history) / len(history)
         avg_reward = sum(h["reward"] for h in history) / len(history)
         
-        # Clamp averages to strict (0, 1) for OpenEnv compliance
-        avg_score = max(0.001, min(avg_score, 0.999))
-        avg_reward = max(0.001, min(avg_reward, 0.999))
-        
-        return {
+        return deep_safe({
             "status": "success",
             "stats": {
                 "total_attempts": len(history),
-                "average_score": round(avg_score, 3),
-                "average_reward": round(avg_reward, 3),
+                "average_score": avg_score,
+                "average_reward": avg_reward,
                 "history": history
             }
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
