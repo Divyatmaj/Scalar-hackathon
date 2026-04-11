@@ -76,10 +76,11 @@ def run_inference():
         
         # Evaluate
         result = env.step(answer)
-        reward = result["reward"]
-        
-        # Print reward
-        print(f"reward={reward}")
+
+        score = result["score"]
+
+        # Print score (NOT reward)
+        print(f"score={score}")
         
         # Print END marker
         print(f"[END]")
