@@ -85,7 +85,7 @@ def run_inference():
         score = "{:.6f}".format(raw_score)
 
         sys.__stdout__.write(f"score={score}\n")
-        sys.__stdout__.write("[END]\n")
+        sys.__stdout__.write("[END]\n\n")
 
 
 if __name__ == "__main__":
