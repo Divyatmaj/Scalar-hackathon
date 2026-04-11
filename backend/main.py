@@ -24,7 +24,7 @@ def selective_safe(obj):
     if isinstance(obj, dict):
         new_obj = {}
         for k, v in obj.items():
-            if k in ["score", "reward", "ai_score", "keyword_score", "improvement", "average_score", "average_reward"]:
+            if k == "score":
                 new_obj[k] = safe_score(v)
             else:
                 new_obj[k] = selective_safe(v)
