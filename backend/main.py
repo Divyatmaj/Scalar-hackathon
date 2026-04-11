@@ -35,9 +35,9 @@ def selective_safe(obj):
 
 
 # Imports
-from backend.app.environment import InterviewEnv
-from backend.app.evaluator import Evaluator
-from backend.app.agent import InterviewAgent
+from app.environment import InterviewEnv
+from app.evaluator import Evaluator
+from app.agent import InterviewAgent
 
 
 app = FastAPI(title="AI Interview Prep RL Environment")
