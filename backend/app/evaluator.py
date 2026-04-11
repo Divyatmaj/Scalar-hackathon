@@ -18,6 +18,8 @@ Design Philosophy:
 import re
 from typing import Dict, List, Any, Tuple
 
+from .score_utils import clamp_open_score
+
 
 class Evaluator:
     """
@@ -68,7 +70,7 @@ class Evaluator:
     
     def evaluate_keywords(self, answer: str, keywords: List[str]) -> Tuple[float, List[str], List[str]]:
         if not answer or not answer.strip():
-            return 0.0001, [], keywords
+            return clamp_open_score(0.0001), [], keywords
         
         normalized_answer = self.normalize_text(answer)
         matched_keywords = []
@@ -85,38 +87,35 @@ class Evaluator:
             keyword_score = 0.5
         else:
             keyword_score = len(matched_keywords) / len(keywords)
-            keyword_score = max(0.0001, min(keyword_score, 0.9999))
+            keyword_score = clamp_open_score(keyword_score)
         
         return keyword_score, matched_keywords, missing_keywords
     
     def evaluate_ai(self, answer: str, question: str = None) -> float:
         if not answer or len(answer.strip()) < 10:
-            return 0.2
+            return clamp_open_score(0.2)
         
         answer_length = len(answer.strip())
         
         if 100 <= answer_length <= 300:
-            return 0.999
+            return clamp_open_score(0.999)
         elif answer_length < 100:
-            return 0.5 + 0.5 * (answer_length / 100.0)
+            return clamp_open_score(0.5 + 0.5 * (answer_length / 100.0))
         else:
             excess = answer_length - 300
             penalty = min(excess / 500.0, 0.3)
-            epsilon = 1e-6
-            return min(0.7, min(1.0 - epsilon, 1.0 - penalty))
+            return clamp_open_score(max(0.7, 1.0 - penalty))
     
     def evaluate(self, answer: str, keywords: List[str], question: str = None) -> Dict[str, Any]:
         keyword_score, matched, missing = self.evaluate_keywords(answer, keywords)
         ai_score = self.evaluate_ai(answer, question)
         
         final_score = (self.keyword_weight * keyword_score) + (self.ai_weight * ai_score)
-        
-        epsilon = 1e-6
-        final_score = max(epsilon, min(final_score, 1 - epsilon))
+        final_score = clamp_open_score(final_score)
 
         # 🔥 FIX: Clamp intermediate scores as well
-        keyword_score = max(0.001, min(keyword_score, 0.999))
-        ai_score = max(0.001, min(ai_score, 0.999))
+        keyword_score = clamp_open_score(keyword_score)
+        ai_score = clamp_open_score(ai_score)
         
         feedback = self._generate_feedback(
             score=final_score,
@@ -177,7 +176,7 @@ class Evaluator:
             return base
     
     def compute_reward(self, score: float) -> float:
-        return float(score)
+        return clamp_open_score(score)
     
     def set_weights(self, keyword_weight: float, ai_weight: float):
         self.keyword_weight = keyword_weight

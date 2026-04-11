@@ -17,14 +17,14 @@ print("🚀 Server starting...")
 
 # ✅ SAFE SCORING (ONLY TARGET SCORE FIELDS)
 def safe_score(x):
-    return max(0.001, min(float(x), 0.999))
+    return clamp_open_score(x)
 
 
 def selective_safe(obj):
     if isinstance(obj, dict):
         new_obj = {}
         for k, v in obj.items():
-            if k == "score":
+            if ("score" in k) or ("reward" in k):
                 new_obj[k] = safe_score(v)
             else:
                 new_obj[k] = selective_safe(v)
@@ -38,6 +38,7 @@ def selective_safe(obj):
 from app.environment import InterviewEnv
 from app.evaluator import Evaluator
 from app.agent import InterviewAgent
+from app.score_utils import clamp_open_score
 
 
 app = FastAPI(title="AI Interview Prep RL Environment")

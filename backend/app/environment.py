@@ -18,6 +18,8 @@ import random
 from typing import Dict, Any, List
 from pathlib import Path
 
+from .score_utils import clamp_open_score
+
 
 class InterviewEnv:
     """
@@ -155,13 +157,13 @@ class InterviewEnv:
         )
         
         # Extract evaluation results
-        score = evaluation["score"]
+        score = clamp_open_score(evaluation["score"])
         feedback = evaluation["feedback"]
         matched_keywords = evaluation["matched_keywords"]
         missing_keywords = evaluation["missing_keywords"]
         
         # Compute reward signal
-        reward = self.evaluator.compute_reward(score)
+        reward = clamp_open_score(self.evaluator.compute_reward(score))
         
         # Increment retry counter
         self.retry_count += 1

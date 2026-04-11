@@ -7,6 +7,8 @@ import os
 import sys
 import json
 import re
+import io
+import contextlib
 from pathlib import Path
 
 # Add backend to path
@@ -16,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent / "backend"))
 from app.environment import InterviewEnv
 from app.evaluator import Evaluator
 from app.agent import InterviewAgent
+from app.score_utils import clamp_open_score, format_open_score
 
 def _format_action_for_log(action: str) -> str:
     """
@@ -47,14 +50,16 @@ def run_inference():
     hf_token = os.getenv("HF_TOKEN")
 
 
-    # Initialize components
-    evaluator = Evaluator()
+    # Initialize components quietly so inference stdout remains parser-stable.
     questions_path = Path(__file__).parent / "backend" / "app" / "dataset.json"
-    env = InterviewEnv(questions_path=str(questions_path), evaluator=evaluator)
+    with contextlib.redirect_stdout(io.StringIO()):
+        evaluator = Evaluator()
+        env = InterviewEnv(questions_path=str(questions_path), evaluator=evaluator)
 
     # Initialize agent
     if hf_token:
-        agent = InterviewAgent(mode="api", api_key=hf_token, model=model_name)
+        with contextlib.redirect_stdout(io.StringIO()):
+            agent = InterviewAgent(mode="api", api_key=hf_token, model=model_name)
     else:
         agent = InterviewAgent(mode="mock")
 
@@ -88,11 +93,8 @@ def run_inference():
         # Evaluate
         result = env.step(answer)
 
-        # SAFE SCORE (STRICTLY BETWEEN 0 AND 1)
-        epsilon = 1e-6
-        score = max(epsilon, min(float(result["score"]), 1 - epsilon))
-
-        print(f"score={score}")
+        score = clamp_open_score(result["score"])
+        print(f"score={format_open_score(score, decimals=6)}")
 
         # END
         print("[END]")
