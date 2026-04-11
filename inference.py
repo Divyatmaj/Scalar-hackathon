@@ -10,12 +10,12 @@ import re
 from pathlib import Path
 
 # Add backend to path
+
 sys.path.insert(0, str(Path(__file__).parent / "backend"))
 
 from app.environment import InterviewEnv
 from app.evaluator import Evaluator
 from app.agent import InterviewAgent
-
 
 def _format_action_for_log(action: str) -> str:
     """
@@ -25,14 +25,15 @@ def _format_action_for_log(action: str) -> str:
     text = re.sub(r"[\r\n\t]+", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
 
-    # Neutralize parser-sensitive tokens in the action log line only.
+    # Neutralize parser-sensitive tokens in action only
     token_map = {
-        "[START]": "(START)",
-        "[STEP]": "(STEP)",
-        "[END]": "(END)",
-        "task_id=": "task_id\\u003d",
-        "score=": "score\\u003d",
+    "[START]": "(START)",
+    "[STEP]": "(STEP)",
+    "[END]": "(END)",
+    "task_id=": "task_id\\u003d",
+    "score=": "score\\u003d",
     }
+
     for src, dst in token_map.items():
         text = text.replace(src, dst)
 
@@ -40,79 +41,62 @@ def _format_action_for_log(action: str) -> str:
 
 
 def run_inference():
-    """
-    Run inference over all tasks with OpenEnv-compliant logging
-    
-    Environment variables:
-    - API_BASE_URL: LLM API endpoint
-    - MODEL_NAME: Model identifier
-    - HF_TOKEN: API authentication token
-    """
-    
-    # Get environment variables
+    # Environment variables
     api_base_url = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
     model_name = os.getenv("MODEL_NAME", "Qwen/Qwen3-Coder-Next:novita")
     hf_token = os.getenv("HF_TOKEN")
-    
+
+
     # Initialize components
     evaluator = Evaluator()
     questions_path = Path(__file__).parent / "backend" / "app" / "dataset.json"
     env = InterviewEnv(questions_path=str(questions_path), evaluator=evaluator)
-    
-    # Initialize agent (will use mock mode if no token)
+
+    # Initialize agent
     if hf_token:
         agent = InterviewAgent(mode="api", api_key=hf_token, model=model_name)
     else:
-        print("⚠️  No HF_TOKEN found, using mock mode")
         agent = InterviewAgent(mode="mock")
-    
-    # Load all tasks
+
+    # Load dataset
     with open(questions_path, 'r') as f:
         tasks = json.load(f)
-    
-    print(f"Running inference on {len(tasks)} tasks")
-    print(f"API Base URL: {api_base_url}")
-    print(f"Model: {model_name}")
-    print("-" * 80)
-    
-    # Run inference on each task
+
+    # Run inference
     for task_idx, task in enumerate(tasks):
         task_id = f"task_{task_idx}"
-        
-        # Print START marker
-        print(f"[START]")
+
+        # START
+        print("[START]")
         print(f"task_id={task_id}")
-        
-        # Reset environment to this specific task
+
+        # Set environment state
         env.current_question = task
         env.episode_history = []
         env.retry_count = 0
-        
+
         question = task["question"]
-        
+
         # Generate answer
         answer = agent.generate_answer(question)
         action_for_log = _format_action_for_log(answer)
-        
-        # Print STEP marker with action
-        print(f"[STEP]")
+
+        # STEP
+        print("[STEP]")
         print(f"action={action_for_log}")
-        
+
         # Evaluate
         result = env.step(answer)
 
-        score = result["score"]
+        # SAFE SCORE (STRICTLY BETWEEN 0 AND 1)
+        epsilon = 1e-6
+        score = max(epsilon, min(float(result["score"]), 1 - epsilon))
 
-        # Print score (NOT reward)
         print(f"score={score}")
-        
-        # Print END marker
-        print(f"[END]")
-        print()
-    
-    print("-" * 80)
-    print(f"✅ Inference complete: {len(tasks)} tasks processed")
+
+        # END
+        print("[END]")
 
 
-if __name__ == "__main__":
+if name == "main":
     run_inference()
