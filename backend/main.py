@@ -133,7 +133,8 @@ def step(request: StepRequest):
     return selective_safe({
         "reward": result["reward"],
         "done": result["done"],
-        "state": state_data
+        "state": state_data,
+        "score": result["score"]
     })
 
 
