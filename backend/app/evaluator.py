@@ -98,7 +98,7 @@ class Evaluator:
         answer_length = len(answer.strip())
         
         if 100 <= answer_length <= 300:
-            return clamp_open_score(0.999)
+            return clamp_open_score(0.89)
         elif answer_length < 100:
             return clamp_open_score(0.5 + 0.5 * (answer_length / 100.0))
         else:

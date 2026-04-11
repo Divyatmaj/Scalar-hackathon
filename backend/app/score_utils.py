@@ -15,7 +15,11 @@ def clamp_open_score(value: float) -> float:
         raise ValueError(f"Score must be finite, got: {score}")
     clamped = max(MIN_OPEN_SCORE, min(score, MAX_OPEN_SCORE))
     quantized = round(clamped, SCORE_DECIMALS)
-    return max(MIN_OPEN_SCORE, min(quantized, MAX_OPEN_SCORE))
+
+    # 🔥 CRITICAL FIX: clamp again AFTER rounding
+    quantized = max(MIN_OPEN_SCORE, min(quantized, MAX_OPEN_SCORE))
+
+    return quantized
 
 
 def format_open_score(value: float, decimals: int = SCORE_DECIMALS) -> str:
