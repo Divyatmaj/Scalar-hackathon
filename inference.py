@@ -1,97 +1,73 @@
+import contextlib
+import io
+import json
 import os
 import sys
-import json
-import re
 from pathlib import Path
 
-# Add backend to path
-# Fixed: changed **file** to __file__
 sys.path.insert(0, str(Path(__file__).parent / "backend"))
 
+from app.agent import InterviewAgent
 from app.environment import InterviewEnv
 from app.evaluator import Evaluator
-from app.agent import InterviewAgent
+from app.score_utils import clamp_open_score, format_open_score
 
-def _format_action(action: str) -> str:
-    if not action:
-        return ""
-    text = str(action)
 
-    # Remove newlines/tabs
-    text = re.sub(r"[\r\n\t]+", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
+def _task_id_alpha(index: int) -> str:
+    base = "abcdefghijklmnopqrstuvwxyz"
+    n = index
+    out = []
+    while True:
+        out.append(base[n % 26])
+        n = (n // 26) - 1
+        if n < 0:
+            break
+    return "task_" + "".join(reversed(out))
 
-    # Remove dangerous tokens
-    text = text.replace("[START]", "")
-    text = text.replace("[STEP]", "")
-    text = text.replace("[END]", "")
-    text = text.replace("task_id=", "")
-    text = text.replace("score=", "")
-
-    return text[:200]  # limit length
 
 def run_inference():
     hf_token = os.getenv("HF_TOKEN")
-
-    evaluator = Evaluator()
+    model_name = os.getenv("MODEL_NAME", "Qwen/Qwen3-Coder-Next:novita")
     questions_path = Path(__file__).parent / "backend" / "app" / "dataset.json"
-    
-    # Ensure the environment is initialized correctly
-    env = InterviewEnv(questions_path=str(questions_path), evaluator=evaluator)
-
-    if hf_token:
-        agent = InterviewAgent(mode="api", api_key=hf_token)
-    else:
-        agent = InterviewAgent(mode="mock")
-
     if not questions_path.exists():
         return
+
+    with contextlib.redirect_stdout(io.StringIO()):
+        evaluator = Evaluator()
+        env = InterviewEnv(questions_path=str(questions_path), evaluator=evaluator)
+        if hf_token:
+            agent = InterviewAgent(mode="api", api_key=hf_token, model=model_name)
+        else:
+            agent = InterviewAgent(mode="mock")
 
     with open(questions_path, "r") as f:
         tasks = json.load(f)
 
-    for i, task in enumerate(tasks):
-        task_id = f"task_{i}"
-
-        # START
-        sys.__stdout__.write("[START]\n")
-        sys.__stdout__.write(f"task_id={task_id}\n")
-
+    for task_idx, task in enumerate(tasks):
         env.current_question = task
         env.episode_history = []
         env.retry_count = 0
-
         question = task.get("question", "")
 
-        # Generate answer
-        answer = agent.generate_answer(question)
-        action = _format_action(answer)
+        with contextlib.redirect_stdout(io.StringIO()):
+            answer = agent.generate_answer(question)
+            result = env.step(answer)
 
-        # STEP
-        sys.__stdout__.write("[STEP]\n")
-        sys.__stdout__.write(f"action={action}\n")
-
-        # Evaluate
-        result = env.step(answer)
-
-        # STRICT SCORE FIX
+        raw_score = result.get("score", 0.5)
         try:
-            raw_score = float(result.get("score", 0.5))
-        except Exception:
-            raw_score = 0.5
+            score = clamp_open_score(float(raw_score))
+        except (TypeError, ValueError):
+            score = 0.5
+        score = clamp_open_score(score)
 
-        # clamp
-        epsilon = 1e-6
-        raw_score = max(epsilon, min(raw_score, 1 - epsilon))
-
-        # force fixed format (VERY IMPORTANT)
-        score = "{:.6f}".format(raw_score)
-
-        sys.__stdout__.write(f"score={score}\n")
-
-        # END
+        sys.__stdout__.write("[START]\n")
+        sys.__stdout__.write(f"task_id={_task_id_alpha(task_idx)}\n")
+        sys.__stdout__.write("[STEP]\n")
+        sys.__stdout__.write("action=answer_submitted\n")
+        sys.__stdout__.write(f"score={format_open_score(score, decimals=1)}\n")
         sys.__stdout__.write("[END]\n")
-        sys.__stdout__.flush() # Critical for real-time log parsing
+        sys.__stdout__.flush()
+
 
 if __name__ == "__main__":
     run_inference()
