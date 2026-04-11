@@ -7,12 +7,10 @@ from pathlib import Path
 # 🔥 BLOCK ALL UNWANTED PRINTS
 sys.stdout = open(os.devnull, 'w')
 
-# Add backend to path
-sys.path.insert(0, str(Path(__file__).parent / "backend"))
-
-from app.environment import InterviewEnv
-from app.evaluator import Evaluator
-from app.agent import InterviewAgent
+# Import modules
+from backend.app.environment import InterviewEnv
+from backend.app.evaluator import Evaluator
+from backend.app.agent import InterviewAgent
 
 
 def _format_action(action: str) -> str:
@@ -53,7 +51,7 @@ def run_inference():
     for i, task in enumerate(tasks):
         task_id = f"task_{i}"
 
-        # STRICT OUTPUT ONLY
+        # START
         sys.__stdout__.write("[START]\n")
         sys.__stdout__.write(f"task_id={task_id}\n")
 
@@ -63,28 +61,36 @@ def run_inference():
 
         question = task["question"]
 
-        # Generate answer
+        # ===== STEP 1 =====
         answer = agent.generate_answer(question)
-        action = _format_action(answer)
+        action1 = _format_action(answer)
 
         sys.__stdout__.write("[STEP]\n")
-        sys.__stdout__.write(f"action={action}\n")
+        sys.__stdout__.write(f"action={action1}\n")
 
-        # Evaluate
-        result = env.step(answer)
-
-        # SAFE SCORE
-        try:
-            raw_score = float(result.get("score", 0.5))
-        except Exception:
-            raw_score = 0.5
+        result1 = env.step(answer)
 
         epsilon = 1e-6
-        raw_score = max(epsilon, min(raw_score, 1 - epsilon))
+        score1 = max(epsilon, min(float(result1.get("score", 0.5)), 1 - epsilon))
+        score1 = "{:.6f}".format(score1)
 
-        score = "{:.6f}".format(raw_score)
+        sys.__stdout__.write(f"score={score1}\n")
 
-        sys.__stdout__.write(f"score={score}\n")
+        # ===== STEP 2 (RETRY) =====
+        improved_answer = answer + " with more explanation"
+        action2 = _format_action(improved_answer)
+
+        sys.__stdout__.write("[STEP]\n")
+        sys.__stdout__.write(f"action={action2}\n")
+
+        result2 = env.step(improved_answer)
+
+        score2 = max(epsilon, min(float(result2.get("score", 0.5)), 1 - epsilon))
+        score2 = "{:.6f}".format(score2)
+
+        sys.__stdout__.write(f"score={score2}\n")
+
+        # END
         sys.__stdout__.write("[END]\n\n")
 
 
