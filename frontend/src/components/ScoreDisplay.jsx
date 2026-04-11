@@ -16,6 +16,9 @@ function ScoreDisplay({ score, reward, feedback }) {
     return '⚠️';
   };
 
+  // 🔥 FIX: force reward into safe range BEFORE display
+  const safeReward = Math.min(0.9, Math.max(0.1, reward));
+
   return (
     <div className="score-display">
       <h3>📊 Evaluation Results</h3>
@@ -42,8 +45,8 @@ function ScoreDisplay({ score, reward, feedback }) {
 
         <div className="metric-card">
           <div className="metric-label">Reward</div>
-          <div className={`metric-value reward-${reward >= 0.7 ? 'positive' : reward <= 0.3 ? 'negative' : 'neutral'}`}>
-            {getRewardEmoji(reward)} {reward.toFixed(1)}
+          <div className={`metric-value reward-${safeReward >= 0.7 ? 'positive' : safeReward <= 0.3 ? 'negative' : 'neutral'}`}>
+            {getRewardEmoji(safeReward)} {safeReward.toFixed(1)}
           </div>
         </div>
       </div>

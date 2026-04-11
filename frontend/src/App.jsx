@@ -18,7 +18,9 @@ function App() {
   const [rewardHistory, setRewardHistory] = useState([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Get new question
+  // 🔥 GLOBAL SAFE CLAMP FUNCTION
+  const safeReward = (val) => Math.min(0.9, Math.max(0.1, val));
+
   const getQuestion = async () => {
     setLoading(true);
     setAnswer('');
@@ -37,7 +39,6 @@ function App() {
     }
   };
 
-  // Generate AI answer
   const generateAnswer = async () => {
     if (!question) {
       alert('Please get a question first!');
@@ -56,7 +57,6 @@ function App() {
       const episode = response.data.episode;
       setEpisodeData(episode);
       
-      // Set the final answer and result
       const finalAttempt = episode.attempt_2 || episode.attempt_1;
       setAnswer(finalAttempt.answer);
       setResult({
@@ -65,19 +65,18 @@ function App() {
         feedback: finalAttempt.feedback
       });
 
-      // Update reward history
-      setRewardHistory([...rewardHistory, finalAttempt.reward]);
+      // 🔥 FIX: store SAFE reward
+      setRewardHistory([...rewardHistory, safeReward(finalAttempt.reward)]);
       
     } catch (error) {
       console.error('Error generating answer:', error);
       const detail = error?.response?.data?.detail;
-      alert(detail ? `Failed to generate answer: ${detail}` : 'Failed to generate answer. Check backend logs/config.');
+      alert(detail ? `Failed to generate answer: ${detail}` : 'Failed to generate answer.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Submit manual answer
   const submitAnswer = async () => {
     if (!question) {
       alert('Please get a question first!');
@@ -97,7 +96,9 @@ function App() {
       });
       
       setResult(response.data.result);
-      setRewardHistory([...rewardHistory, response.data.result.reward]);
+
+      // 🔥 FIX: store SAFE reward
+      setRewardHistory([...rewardHistory, safeReward(response.data.result.reward)]);
       
     } catch (error) {
       console.error('Error submitting answer:', error);
@@ -114,56 +115,30 @@ function App() {
         <button 
           className="settings-btn"
           onClick={() => setIsSettingsOpen(true)}
-          title="Configure Model"
         >
           ⚙️
         </button>
         <p className="subtitle">Reinforcement Learning Environment</p>
-        <div className="rl-flow">
-          <span className="flow-item">STATE (Question)</span>
-          <span className="arrow">→</span>
-          <span className="flow-item">ACTION (Answer)</span>
-          <span className="arrow">→</span>
-          <span className="flow-item">REWARD (Score)</span>
-          <span className="arrow">→</span>
-          <span className="flow-item">NEXT STATE</span>
-        </div>
       </header>
 
       <SettingsModal 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        onSave={() => {
-          // Optional: Refresh or show success message
-          alert('✅ Model configuration updated!');
-        }}
+        onSave={() => alert('✅ Model configuration updated!')}
       />
 
       <div className="container">
         <div className="controls">
-          <button 
-            onClick={getQuestion} 
-            disabled={loading}
-            className="btn btn-primary"
-          >
+          <button onClick={getQuestion} disabled={loading} className="btn btn-primary">
             {loading ? '⏳ Loading...' : '🎯 Get New Question'}
           </button>
           
-          <button 
-            onClick={generateAnswer} 
-            disabled={loading || !question}
-            className="btn btn-success"
-          >
+          <button onClick={generateAnswer} disabled={loading || !question} className="btn btn-success">
             {loading ? '🤔 Thinking...' : '🤖 Generate AI Answer'}
           </button>
         </div>
 
-        {question && (
-          <QuestionCard 
-            question={question} 
-            difficulty={difficulty}
-          />
-        )}
+        {question && <QuestionCard question={question} difficulty={difficulty} />}
 
         {episodeData && (
           <div className="episode-container">
@@ -181,20 +156,13 @@ function App() {
 
             {episodeData.attempt_2 && (
               <div className="attempt-section retry">
-                <h4>🔄 Attempt 2 (Retry with Feedback):</h4>
+                <h4>🔄 Attempt 2:</h4>
                 <p className="answer-text">{episodeData.attempt_2.answer}</p>
                 <ScoreDisplay 
                   score={episodeData.attempt_2.score}
                   reward={episodeData.attempt_2.reward}
                   feedback={episodeData.attempt_2.feedback}
                 />
-                <div className="improvement">
-                  <strong>Improvement: </strong>
-                  <span className={episodeData.improvement > 0 ? 'positive' : 'negative'}>
-                    {episodeData.improvement > 0 ? '↑' : '↓'} 
-                    {(episodeData.improvement * 100).toFixed(1)}%
-                  </span>
-                </div>
               </div>
             )}
           </div>
@@ -225,26 +193,33 @@ function App() {
                 <div key={index} className="reward-bar-container">
                   <div 
                     className={`reward-bar ${reward >= 0.7 ? 'positive' : reward <= 0.3 ? 'negative' : 'neutral'}`}
-                    style={{
-                      height: `${reward * 100}px`
-                    }}
+                    style={{ height: `${reward * 100}px` }}
                   >
-                    <span className="reward-value">{reward.toFixed(1)}</span>
+                    {/* 🔥 FIX HERE */}
+                    <span className="reward-value">{safeReward(reward).toFixed(1)}</span>
                   </div>
                   <span className="episode-number">E{index + 1}</span>
                 </div>
               ))}
             </div>
+
+            {/* 🔥 FIX AVG */}
             <div className="stats">
               <div>Total Episodes: {rewardHistory.length}</div>
-              <div>Avg Reward: {(rewardHistory.reduce((a, b) => a + b, 0) / rewardHistory.length).toFixed(1)}</div>
+              <div>
+                Avg Reward: {
+                  safeReward(
+                    rewardHistory.reduce((a, b) => a + b, 0) / rewardHistory.length
+                  ).toFixed(1)
+                }
+              </div>
             </div>
           </div>
         )}
       </div>
 
       <footer className="footer">
-        <p>Built with RL principles: Environment + Agent + Reward System</p>
+        <p>Built with RL principles</p>
       </footer>
     </div>
   );
