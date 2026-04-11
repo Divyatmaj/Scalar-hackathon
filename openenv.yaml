@@ -40,9 +40,9 @@ endpoints:
       properties:
         reward:
           type: number
-          description: Reward signal between 0.0 and 1.0
-          minimum: 0.0
-          maximum: 1.0
+          description: Reward signal between 0.1 and 0.9
+          minimum: 0.1
+          maximum: 0.9
         done:
           type: boolean
           description: Whether episode is complete
@@ -97,8 +97,8 @@ grading:
     - keyword_matching: 0.8
     - length_scoring: 0.2
   output_range:
-    min: 0.0
-    max: 1.0
+    min: 0.1
+    max: 0.9
 
 environment:
   type: single_question_episode
@@ -108,4 +108,4 @@ environment:
     - difficulty: string
     - attempt: integer
   action_space: text
-  reward_range: [0.0, 1.0]
+  reward_range: [0.1, 0.9]

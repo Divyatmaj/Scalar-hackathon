@@ -30,7 +30,8 @@ def selective_safe(obj):
     if isinstance(obj, dict):
         new_obj = {}
         for k, v in obj.items():
-            if ("score" in k) or ("reward" in k):
+            key = str(k).lower()
+            if ("score" in key) or ("reward" in key):
                 new_obj[k] = safe_score(v)
             else:
                 new_obj[k] = selective_safe(v)

@@ -24,7 +24,8 @@ def selective_safe(obj):
     if isinstance(obj, dict):
         new_obj = {}
         for k, v in obj.items():
-            if ("score" in k) or ("reward" in k):
+            key = str(k).lower()
+            if ("score" in key) or ("reward" in key):
                 new_obj[k] = safe_score(v)
             else:
                 new_obj[k] = selective_safe(v)
@@ -35,10 +36,16 @@ def selective_safe(obj):
 
 
 # Imports
-from app.environment import InterviewEnv
-from app.evaluator import Evaluator
-from app.agent import InterviewAgent
-from app.score_utils import clamp_open_score
+try:
+    from .app.environment import InterviewEnv
+    from .app.evaluator import Evaluator
+    from .app.agent import InterviewAgent
+    from .app.score_utils import clamp_open_score
+except ImportError:
+    from app.environment import InterviewEnv
+    from app.evaluator import Evaluator
+    from app.agent import InterviewAgent
+    from app.score_utils import clamp_open_score
 
 
 app = FastAPI(title="AI Interview Prep RL Environment")

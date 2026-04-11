@@ -46,7 +46,7 @@ class InterviewEnv:
         """
         # Set default path if not provided
         if questions_path is None:
-            questions_path = Path(__file__).parent.parent / "data" / "questions.json"
+            questions_path = Path(__file__).parent / "dataset.json"
         
         self.questions_path = questions_path
         self.evaluator = evaluator
