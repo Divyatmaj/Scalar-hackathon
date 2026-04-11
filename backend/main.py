@@ -38,11 +38,23 @@ app.add_middleware(
 evaluator = Evaluator()
 
 # Resolve dataset path — works in both local (backend/) and Docker (/app/) contexts
-questions_path = Path(__file__).resolve().parent / "app" / "dataset.json"
-print(f"📂 Dataset path: {questions_path}")
-print(f"📂 Dataset exists: {questions_path.exists()}")
+BASE_DIR = Path(__file__).resolve().parent
+DATA_PATH = BASE_DIR / "app" / "dataset.json"
+print("STARTING APP...")
+print(f"Loading dataset from: {DATA_PATH}")
+print(f"File exists: {DATA_PATH.exists()}")
+print(f"BASE_DIR contents: {list(BASE_DIR.iterdir())}")
 
-env = InterviewEnv(questions_path=str(questions_path), evaluator=evaluator)
+try:
+    env = InterviewEnv(questions_path=str(DATA_PATH), evaluator=evaluator)
+    if not env.questions:
+        raise RuntimeError(f"Dataset loaded but 0 questions found at {DATA_PATH}")
+    print(f"ENV INIT SUCCESS — {len(env.questions)} questions loaded")
+except Exception as e:
+    print(f"ENV INIT FAILED: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
 
 # Graceful agent init — don't crash server if API key is missing
 try:

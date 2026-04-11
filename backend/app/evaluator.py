@@ -201,6 +201,13 @@ class Evaluator:
         final_score = (self.keyword_weight * keyword_score) + (self.ai_weight * ai_score)
         final_score = max(0.0001, min(final_score, 0.9999))
         
+        # Clamp to exclusive (0, 1) range for OpenEnv compliance
+        final_score = max(0.001, min(final_score, 0.999))
+        # Round to 3 decimal places for clean output
+        final_score = round(final_score, 3)
+        # Re-clamp after rounding to guarantee strict (0, 1)
+        final_score = max(0.001, min(final_score, 0.999))
+        
         # Generate structured feedback
         feedback = self._generate_feedback(
             score=final_score,

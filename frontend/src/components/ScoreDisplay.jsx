@@ -43,7 +43,7 @@ function ScoreDisplay({ score, reward, feedback }) {
         <div className="metric-card">
           <div className="metric-label">Reward</div>
           <div className={`metric-value reward-${reward >= 5 ? 'positive' : reward < 0 ? 'negative' : 'neutral'}`}>
-            {getRewardEmoji(reward)} {reward > 0 ? '+' : ''}{reward}
+            {getRewardEmoji(reward)} {reward > 0 ? '+' : ''}{reward.toFixed(3)}
           </div>
         </div>
       </div>

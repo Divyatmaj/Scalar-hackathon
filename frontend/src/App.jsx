@@ -228,7 +228,7 @@ function App() {
                       height: `${Math.abs(reward) * 10 + 20}px`
                     }}
                   >
-                    <span className="reward-value">{reward}</span>
+                    <span className="reward-value">{reward.toFixed(3)}</span>
                   </div>
                   <span className="episode-number">E{index + 1}</span>
                 </div>
@@ -236,7 +236,7 @@ function App() {
             </div>
             <div className="stats">
               <div>Total Episodes: {rewardHistory.length}</div>
-              <div>Avg Reward: {(rewardHistory.reduce((a, b) => a + b, 0) / rewardHistory.length).toFixed(2)}</div>
+              <div>Avg Reward: {(rewardHistory.reduce((a, b) => a + b, 0) / rewardHistory.length).toFixed(3)}</div>
             </div>
           </div>
         )}
