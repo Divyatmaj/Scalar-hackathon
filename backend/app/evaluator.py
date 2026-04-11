@@ -102,18 +102,17 @@ class Evaluator:
         else:
             excess = answer_length - 300
             penalty = min(excess / 500.0, 0.3)
-            return max(0.7, 1.0 - penalty)
+            epsilon = 1e-6
+            return min(0.7, min(1.0 - epsilon, 1.0 - penalty))
     
     def evaluate(self, answer: str, keywords: List[str], question: str = None) -> Dict[str, Any]:
         keyword_score, matched, missing = self.evaluate_keywords(answer, keywords)
         ai_score = self.evaluate_ai(answer, question)
         
         final_score = (self.keyword_weight * keyword_score) + (self.ai_weight * ai_score)
-        final_score = max(0.0001, min(final_score, 0.9999))
         
-        final_score = max(0.001, min(final_score, 0.999))
-        final_score = round(final_score, 3)
-        final_score = max(0.001, min(final_score, 0.999))
+        epsilon = 1e-6
+        final_score = max(epsilon, min(final_score, 1 - epsilon))
 
         # 🔥 FIX: Clamp intermediate scores as well
         keyword_score = max(0.001, min(keyword_score, 0.999))
