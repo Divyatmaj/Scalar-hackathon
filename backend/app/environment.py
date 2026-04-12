@@ -77,3 +77,23 @@ class InterviewEnv:
             return True
 
         return False
+
+    def state(self) -> Dict[str, Any]:
+        """
+        Get current environment state
+        """
+        if not self.current_question:
+            raise ValueError("Environment not initialized. Call reset() first.")
+        
+        return {
+            "question": self.current_question.get("question", ""),
+            "keywords": self.current_question.get("keywords", []),
+            "difficulty": self.current_question.get("difficulty", "medium"),
+            "attempt": len(self.episode_history) + 1,
+        }
+
+    def get_history(self) -> List[Dict[str, Any]]:
+        """
+        Get episode history for stats
+        """
+        return self.episode_history

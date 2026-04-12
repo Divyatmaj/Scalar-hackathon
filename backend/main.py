@@ -142,11 +142,14 @@ def act(request: StepRequest):
     result["reward"] = clamp_open_score(result["reward"])
     result["score"] = clamp_open_score(result["score"])
     state_data = env.state()
+    
+    # Determine if episode is done (can retry or not)
+    is_done = not env.should_retry(result["score"])
 
     return selective_safe({
         "score": result["score"],
         "reward": result["reward"],
-        "done": result["done"],
+        "done": is_done,
         "state": state_data
     })
 
