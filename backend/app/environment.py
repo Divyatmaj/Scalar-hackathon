@@ -2,6 +2,7 @@ import json
 import random
 from typing import Dict, Any, List
 from pathlib import Path
+from .score_utils import clamp_open_score
 
 class InterviewEnv:
     def __init__(self, questions_path: str, evaluator):
@@ -49,13 +50,12 @@ class InterviewEnv:
         except (TypeError, ValueError):
             score = 0.5
 
-        # Clamp score STRICTLY between (0,1)
-        epsilon = 1e-6
-        score = max(epsilon, min(score, 1 - epsilon))
+        # Clamp score strictly to [0.1, 0.9] using central utility
+        score = clamp_open_score(score)
 
         result = {
             "score": score,
-            "reward": score,  # optional, not used by validator
+            "reward": clamp_open_score(score),
             "feedback": evaluation.get("feedback", ""),
             "matched_keywords": evaluation.get("matched_keywords", []),
             "missing_keywords": evaluation.get("missing_keywords", []),

@@ -14,6 +14,18 @@ load_dotenv()
 
 print("🚀 Server starting...")
 
+# Imports — must come before any helper that calls clamp_open_score
+try:
+    from .app.environment import InterviewEnv
+    from .app.evaluator import Evaluator
+    from .app.agent import InterviewAgent
+    from .app.score_utils import clamp_open_score
+except ImportError:
+    from app.environment import InterviewEnv
+    from app.evaluator import Evaluator
+    from app.agent import InterviewAgent
+    from app.score_utils import clamp_open_score
+
 
 # ✅ SAFE SCORING (ONLY TARGET SCORE FIELDS)
 def safe_score(x):
@@ -35,19 +47,6 @@ def selective_safe(obj):
     elif isinstance(obj, list):
         return [selective_safe(x) for x in obj]
     return obj
-
-
-# Imports
-try:
-    from .app.environment import InterviewEnv
-    from .app.evaluator import Evaluator
-    from .app.agent import InterviewAgent
-    from .app.score_utils import clamp_open_score
-except ImportError:
-    from app.environment import InterviewEnv
-    from app.evaluator import Evaluator
-    from app.agent import InterviewAgent
-    from app.score_utils import clamp_open_score
 
 
 app = FastAPI(title="AI Interview Prep RL Environment")
