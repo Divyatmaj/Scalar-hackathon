@@ -97,20 +97,28 @@ class InterviewAgent:
         Returns:
             Generated answer string
         """
+        if not question or not isinstance(question, str) or not question.strip():
+            return "This is a complex topic in computer science."
+        
         if self.mode == "mock":
-            return self._generate_mock_answer(
+            answer = self._generate_mock_answer(
                 question, 
                 feedback, 
                 missing_keywords,
                 previous_attempts
             )
         else:
-            return self._generate_api_answer(
+            answer = self._generate_api_answer(
                 question, 
                 feedback, 
                 missing_keywords,
                 previous_attempts
             )
+        
+        if not answer or not isinstance(answer, str):
+            return "This is a complex topic in computer science."
+        
+        return answer
     
     def _generate_mock_answer(
         self, 
@@ -137,6 +145,9 @@ class InterviewAgent:
         Returns:
             Simulated answer
         """
+        if not question or not isinstance(question, str):
+            return "This is a complex topic in computer science."
+        
         # Database of mock answers for common topics
         # These are intentionally partial to trigger retry mechanism
         mock_knowledge_base = {
@@ -199,6 +210,9 @@ class InterviewAgent:
         - Initial attempt: Clear, structured question
         - Retry attempt: Includes feedback and missing concepts
         """
+        if not question or not isinstance(question, str):
+            return "This is a complex topic in computer science."
+        
         if not self.client:
             return self._generate_mock_answer(question, feedback, missing_keywords, previous_attempts)
         
