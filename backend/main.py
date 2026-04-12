@@ -193,7 +193,7 @@ def auto_run(request: AutoRunRequest):
         answer=answer_1,
         score=result_1["score"],
         feedback=result_1["feedback"],
-        attempt=result_1["attempt"],
+        attempt=1,
     )
     attempt_1 = {
         "answer": answer_1,
@@ -228,7 +228,7 @@ def auto_run(request: AutoRunRequest):
             answer=answer_2,
             score=result_2["score"],
             feedback=result_2["feedback"],
-            attempt=result_2["attempt"],
+            attempt=2,
         )
         episode["attempt_2"] = {
             "answer": answer_2,
